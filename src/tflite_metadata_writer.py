@@ -158,6 +158,13 @@ class MetadataPopulatorForImageClassifier(object):
         )
         self.metadata_buf = b.Output()
 
+    def _populate_metadata(self):
+        """Populates metadata and label file to the model file."""
+        populator = _metadata.MetadataPopulator.with_model_file(self.model_file)
+        populator.load_metadata_buffer(self.metadata_buf)
+        populator.load_associated_files([self.label_file_path])
+        populator.populate()
+
 
 def main(_):
     model_file = FLAGS.model_file
@@ -167,7 +174,7 @@ def main(_):
 
     export_model_path = os.path.join(FLAGS.export_directory, model_basename)
 
-    tf.io.gfile.copy(model_file, export_model_path, overwrite=False)
+    tf.io.gfile.copy(model_file, export_model_path, overwrite=True)
 
     populator = MetadataPopulatorForImageClassifier(
         export_model_path, _MODEL_INFO.get(model_basename), FLAGS.label_file
