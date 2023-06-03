@@ -59,6 +59,10 @@ def augment_data(train_ds, val_ds):
         val_ds = val_ds.map(lambda x, y: (augment_layer(x), y))
     return train_ds, val_ds
 
+def get_callbacks():
+    callbacks = []
+    return callbacks
+
 
 def main(_):
     tf.keras.backend.clear_session()
@@ -87,7 +91,17 @@ def main(_):
             metrics=["accuracy"],
         )
 
-    # TODO: Fitting Model
+    with strategy.scope():
+        model.fit(
+            train_ds,
+            epochs=50, # TODO: Default value can be removed
+            batch_size=batch_size,
+            validation_data=val_ds,
+            validation_steps=10000 // batch_size, # TODO: Default value can be removed
+            steps_per_epoch=40000 // batch_size, # TODO: Default value can be removed
+            callbacks=get_callbacks(),
+        )
+
     # TODO: Save model
 
 
