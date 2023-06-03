@@ -6,7 +6,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from absl import app
 from absl import flags
 
-import flatbuffers
 import tensorflow as tf
 
 from model import LeafDiseaseClassifier
