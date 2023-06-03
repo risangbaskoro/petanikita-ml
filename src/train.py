@@ -25,6 +25,7 @@ def define_flags():
     flags.DEFINE_bool("augment_data", True, "Whether to augment the data.")
     flags.DEFINE_integer("batch_size", 200, "The batch size.")
     flags.DEFINE_string("tpu_address", "local", "The address of the TPU to connect to.") # TODO: REMOVE DEFAULTS to ""
+    flags.DEFINE_integer("num_epochs", 10, "The number of epochs to train for.")
 
     flags.mark_flag_as_required("dataset_path")
     flags.mark_flag_as_required("model_export_name")
@@ -97,7 +98,7 @@ def main(_):
     with strategy.scope():
         model.fit(
             train_ds,
-            epochs=10, # TODO: Default value can be removed, use flags
+            epochs=FLAGS.num_epochs,
             batch_size=batch_size,
             validation_data=val_ds,
             validation_steps=10000 // batch_size, # TODO: Default value can be removed, use flags
