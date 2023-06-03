@@ -31,7 +31,7 @@ def define_flags():
     flags.mark_flag_as_required("model_export_path")
 
 
-def get_image_dataset_from_directory(directory, image_size=(224, 224), validation_split=0.2, seed=42):
+def get_image_dataset_from_directory(directory, image_size=(224, 224), validation_split=0.2, seed=42): # TODO: Default value can be removed, use flags instead
     train_ds = tf.keras.utils.image_dataset_from_directory(
         directory,
         image_size=image_size,
@@ -70,7 +70,7 @@ def get_callbacks():
 def main(_):
     tf.keras.backend.clear_session()
 
-    cluster_resolver, strategy = connect_to_tpu(tpu_address=FLAGS.tpu_address)
+    _, strategy = connect_to_tpu(tpu_address=FLAGS.tpu_address)
 
     train_ds, val_ds = get_image_dataset_from_directory(FLAGS.dataset_path)
 
@@ -87,7 +87,7 @@ def main(_):
     val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE).repeat()
 
     with strategy.scope():
-        model = LeafDiseaseClassifier(num_classes=num_classes)
+        model = LeafDiseaseClassifier(num_classes=num_classes, model="MobileNetV2", weights="imagenet") # TODO: Default value can be removed, use flags
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
