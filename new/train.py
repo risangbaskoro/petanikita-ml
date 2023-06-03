@@ -24,19 +24,17 @@ def define_flags():
     flags.mark_flag_as_required("dataset_path")
 
 
-def get_image_dataset_from_directory(directory, seed=42):
-    IMAGE_SIZE = (224, 224)
-
+def get_image_dataset_from_directory(directory, image_size=(224, 224), seed=42):
     train_ds = tf.keras.utils.image_dataset_from_directory(
         directory,
-        image_size=IMAGE_SIZE,
+        image_size=image_size,
         validation_split=0.2,
         subset="training",
         seed=seed,
     )
     val_ds = tf.keras.utils.image_dataset_from_directory(
         directory,
-        image_size=IMAGE_SIZE,
+        image_size=image_size,
         validation_split=0.2,
         subset="validation",
         seed=seed,
