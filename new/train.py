@@ -17,8 +17,11 @@ FLAGS = flags.FLAGS
 
 def define_flags():
     # TODO: REMOVE DEFAULTS
-    flags.DEFINE_string("dataset_path", "/mnt/disks/persist/RiceLeafs/train", "The path to the dataset.")
+    flags.DEFINE_string(
+        "dataset_path", "/mnt/disks/persist/RiceLeafs/train", "The path to the dataset."
+    )
     flags.DEFINE_bool("augment_data", True, "Whether to augment the data.")
+    flags.DEFINE_integer("batch_size", 200, "The batch size.")
     flags.DEFINE_string("tpu_address", "local", "The address of the TPU to connect to.")
 
     flags.mark_flag_as_required("dataset_path")
@@ -69,7 +72,8 @@ def main(_):
     if FLAGS.augment_data:
         train_ds, val_ds = augment_data(train_ds, val_ds)
 
-    # TODO: Batch
+    batch_size = FLAGS.batch_size
+
     # TODO: Prefetch
     # TODO: Define and compile model
     # TODO: Fitting Model
