@@ -9,6 +9,7 @@ from absl import flags
 import flatbuffers
 import tensorflow as tf
 
+from model import LeafDiseaseClassifier
 from utils import connect_to_tpu
 
 
@@ -78,7 +79,14 @@ def main(_):
     train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE).repeat()
     val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE).repeat()
 
-    # TODO: Define and compile model
+    with strategy.scope():
+        model = LeafDiseaseClassifier(num_classes=num_classes)
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            metrics=["accuracy"],
+        )
+
     # TODO: Fitting Model
     # TODO: Save model
 
