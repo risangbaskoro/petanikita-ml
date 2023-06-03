@@ -8,5 +8,5 @@ from train import *
 from test import *
 
 if __name__ == "__main__":
-    # train(tpu_address="local")
-    test(model_name="rice_leaf_disease_classifier")
+    train(tpu_address="local")
+    # test(model_name="rice_leaf_disease_classifier")

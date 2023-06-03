@@ -7,3 +7,13 @@ venv/
 
 # Python cache
 **/__pycache__/
+
+
+# Training Logs
+logs/
+
+# Model
+model/
+
+# Converted Model
+converted_model/

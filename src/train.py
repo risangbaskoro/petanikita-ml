@@ -120,7 +120,9 @@ def train(
     val_ds = val_ds.cache().prefetch(buffer_size=32).repeat()
 
     with strategy.scope():
-        model = get_model(num_classes)
+        # model = get_model(num_classes)
+        from model import LeafDiseaseClassifier
+        model = LeafDiseaseClassifier(num_classes)
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
