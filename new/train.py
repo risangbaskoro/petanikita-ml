@@ -17,29 +17,32 @@ FLAGS = flags.FLAGS
 
 
 def define_flags():
-    # TODO: REMOVE DEFAULTS
     flags.DEFINE_string(
         "dataset_path", "/mnt/disks/persist/RiceLeafs/train", "The path to the dataset."
-    )
+    )# TODO: REMOVE DEFAULTS to None
+    flags.DEFINE_string("model_export_name", "rice_leaf_disease_classifier", "The name of the model.") # TODO: REMOVE DEFAULTS to None
+    flags.DEFINE_string("model_export_path", "model", "The path to the model.") # TODO: REMOVE DEFAULTS to None
     flags.DEFINE_bool("augment_data", True, "Whether to augment the data.")
     flags.DEFINE_integer("batch_size", 200, "The batch size.")
-    flags.DEFINE_string("tpu_address", "local", "The address of the TPU to connect to.")
+    flags.DEFINE_string("tpu_address", "local", "The address of the TPU to connect to.") # TODO: REMOVE DEFAULTS to ""
 
     flags.mark_flag_as_required("dataset_path")
+    flags.mark_flag_as_required("model_export_name")
+    flags.mark_flag_as_required("model_export_path")
 
 
-def get_image_dataset_from_directory(directory, image_size=(224, 224), seed=42):
+def get_image_dataset_from_directory(directory, image_size=(224, 224), validation_split=0.2, seed=42):
     train_ds = tf.keras.utils.image_dataset_from_directory(
         directory,
         image_size=image_size,
-        validation_split=0.2,
+        validation_split=validation_split,
         subset="training",
         seed=seed,
     )
     val_ds = tf.keras.utils.image_dataset_from_directory(
         directory,
         image_size=image_size,
-        validation_split=0.2,
+        validation_split=validation_split,
         subset="validation",
         seed=seed,
     )
@@ -94,15 +97,17 @@ def main(_):
     with strategy.scope():
         model.fit(
             train_ds,
-            epochs=50, # TODO: Default value can be removed
+            epochs=10, # TODO: Default value can be removed, use flags
             batch_size=batch_size,
             validation_data=val_ds,
-            validation_steps=10000 // batch_size, # TODO: Default value can be removed
-            steps_per_epoch=40000 // batch_size, # TODO: Default value can be removed
+            validation_steps=10000 // batch_size, # TODO: Default value can be removed, use flags
+            steps_per_epoch=40000 // batch_size, # TODO: Default value can be removed, use flags
             callbacks=get_callbacks(),
         )
 
-    # TODO: Save model
+    if FLAGS.model_export_path is not None:
+        model_path = os.path.join(FLAGS.model_export_path, FLAGS.model_export_name)
+        model.save(model_path)
 
 
 if __name__ == "__main__":
