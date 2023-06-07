@@ -31,7 +31,7 @@ def define_flags():
     )  # TODO: Remove defaults
     flags.DEFINE_string(
         "export_directory",
-        "converted_model/",
+        "converted_model_metadata/",
         "Path to save the TFLite model files with metadata.",
     )
     flags.mark_flag_as_required("model_file")
