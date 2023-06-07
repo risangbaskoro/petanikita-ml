@@ -10,9 +10,8 @@ from absl import app
 from absl import flags
 import tensorflow as tf
 
-import flatbuffers
-
 # pylint: disable=g-direct-tensorflow-import
+from tflite_support import flatbuffers
 from tflite_support import metadata_schema_py_generated as _metadata_fb
 from tflite_support import metadata as _metadata
 
@@ -23,11 +22,17 @@ FLAGS = flags.FLAGS
 
 def define_flags():
     flags.DEFINE_string(
-        "model_file", None, "Path and file name to the TFLite model file."
-    )
-    flags.DEFINE_string("label_file", None, "Path to the label file.")
+        "model_file",
+        "converted_model/rldc_mobilenet_v1_1_default_1.tflite",
+        "Path and file name to the TFLite model file.",
+    )  # TODO: Remove defaults
     flags.DEFINE_string(
-        "export_directory", None, "Path to save the TFLite model files with metadata."
+        "label_file", "converted_model/rldc_mobilenet_labels.txt", "Path to the label file."
+    )  # TODO: Remove defaults
+    flags.DEFINE_string(
+        "export_directory",
+        "converted_model/",
+        "Path to save the TFLite model files with metadata.",
     )
     flags.mark_flag_as_required("model_file")
     flags.mark_flag_as_required("label_file")
@@ -61,7 +66,7 @@ class ModelSpecificInfo(object):
 
 
 _MODEL_INFO = {
-    "rice_leaf_disease_classifier.tflite": ModelSpecificInfo(
+    "rldc_mobilenet_v1_1_default_1.tflite": ModelSpecificInfo(
         name="Rice Leaf Disease Classifier",
         version="v1",
         image_width=224,

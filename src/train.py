@@ -1,150 +1,128 @@
+"""Train a model"""
 import os
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+from absl import app
+from absl import flags
 
 import tensorflow as tf
 
+from model import LeafDiseaseClassifier
 from utils import connect_to_tpu
 
 
-def get_datasets():
-    """Returns the training and validation datasets.
-    Returns:
-        tuple: A tuple containing the training and validation datasets.
-    """
-    ROOT_DIR = "/mnt/disks/persist/RiceLeafs"
+FLAGS = flags.FLAGS
 
-    TRAIN_DIR = os.path.join(ROOT_DIR, "train")
-    VAL_DIR = os.path.join(ROOT_DIR, "train")
 
-    IMAGE_SIZE = (224, 224)
+def define_flags():
+    flags.DEFINE_string(
+        "dataset_path",
+        "/mnt/disks/persist/rice-leafs-1000px/train",
+        "The path to the dataset.",
+    )  # TODO: REMOVE DEFAULTS to None
+    flags.DEFINE_string("export_path", None, "Path to export the model")
+    flags.DEFINE_bool("augment_data", False, "Whether to augment the data.")
+    flags.DEFINE_integer("batch_size", 200, "The batch size.")
+    flags.DEFINE_string(
+        "tpu", "local", "The address of the TPU to connect to."
+    )  # TODO: REMOVE DEFAULTS to ""
+    flags.DEFINE_integer("num_epochs", 10, "The number of epochs to train for.")
 
+    flags.mark_flag_as_required("dataset_path")
+    flags.mark_flag_as_required("export_path")
+
+
+def get_image_dataset_from_directory(
+    directory, image_size=(224, 224), validation_split=0.2, seed=42
+):  # TODO: Default value can be removed, use flags instead
     train_ds = tf.keras.utils.image_dataset_from_directory(
-        TRAIN_DIR,
-        image_size=IMAGE_SIZE,
-        validation_split=0.2,
+        directory,
+        image_size=image_size,
+        validation_split=validation_split,
         subset="training",
-        seed=42,
+        seed=seed,
     )
-
     val_ds = tf.keras.utils.image_dataset_from_directory(
-        VAL_DIR,
-        image_size=IMAGE_SIZE,
-        validation_split=0.2,
+        directory,
+        image_size=image_size,
+        validation_split=validation_split,
         subset="validation",
-        seed=42,
+        seed=seed,
     )
-
-    print("\n")
     return train_ds, val_ds
 
 
-def get_augmentation():
-    """Returns the augmentation layer."""
-    return tf.keras.Sequential(
+def augment_data(train_ds, val_ds):
+    augment_layer = tf.keras.Sequential(
         [
             tf.keras.layers.RandomFlip("horizontal_and_vertical"),
             tf.keras.layers.RandomRotation(0.2),
             tf.keras.layers.RandomZoom(0.2),
         ]
     )
-
-
-def get_model(num_classes=4):
-    """Returns the model.
-    Args:
-        num_classes (int): Number of classes to classify.
-    """
-    pre_trained_model = tf.keras.applications.MobileNetV2(
-        input_shape=(224, 224, 3),
-        include_top=False,
-        weights="imagenet",
-    )
-
-    for layer in pre_trained_model.layers:
-        layer.trainable = False
-
-    model = tf.keras.models.Sequential(
-        [
-            tf.keras.layers.Lambda(tf.keras.applications.mobilenet_v2.preprocess_input),
-            pre_trained_model,
-            tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Conv2D(500, 3),
-            tf.keras.layers.Flatten(name="flatten"),
-            tf.keras.layers.Dense(num_classes, activation="sigmoid", name="prediction"),
-        ]
-    )
-
-    return model
+    train_ds = train_ds.map(lambda x, y: (augment_layer(x), y))
+    if val_ds is not None:
+        val_ds = val_ds.map(lambda x, y: (augment_layer(x), y))
+    return train_ds, val_ds
 
 
 def get_callbacks():
-    """Returns the callbacks for the model.
-    Returns:
-        list: A list containing the callbacks for the model.
-    """
     callbacks = [
-        tf.keras.callbacks.TensorBoard(
-            log_dir=os.path.join(os.getcwd(), "logs"),
-        ),
-        tf.keras.callbacks.LearningRateScheduler(
-            lambda epoch, lr: lr if epoch < 3 else lr * tf.math.exp(-0.1)
-        ),
+        tf.keras.callbacks.EarlyStopping(
+            monitor="val_accuracy", patience=5, restore_best_weights=True
+        )
     ]
-
     return callbacks
 
 
-def train(
-    tpu_address: str = None,
-):
+def main(_):
     tf.keras.backend.clear_session()
-    print("\n")
 
-    cluster_resolver, strategy = connect_to_tpu(tpu_address=tpu_address)
+    _, strategy = connect_to_tpu(tpu_address=FLAGS.tpu)
 
-    print("Preparing Datasets...\n")
-
-    train_ds, val_ds = get_datasets()
+    train_ds, val_ds = get_image_dataset_from_directory(FLAGS.dataset_path)
 
     class_names = train_ds.class_names
     num_classes = len(class_names)
 
-    print("Augmenting Datasets...\n")
-    data_augmentation = get_augmentation()
-    train_ds = train_ds.map(lambda x, y: (data_augmentation(x), y))
-    val_ds = val_ds.map(lambda x, y: (data_augmentation(x), y))
+    if FLAGS.augment_data:
+        train_ds, val_ds = augment_data(train_ds, val_ds)
 
-    batch_size = 200
+    batch_size = FLAGS.batch_size
 
     AUTOTUNE = tf.data.AUTOTUNE
-    train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=32).repeat()
-    val_ds = val_ds.cache().prefetch(buffer_size=32).repeat()
+    train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE).repeat()
+    val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE).repeat()
+
+    model_basename = os.path.basename(FLAGS.export_path)
 
     with strategy.scope():
-        model = get_model(num_classes)
+        model = LeafDiseaseClassifier(
+            num_classes=num_classes, name=model_basename[1]
+        )  # TODO: Default value can be removed, use flags
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(),
             metrics=["accuracy"],
         )
 
-    steps_per_epoch = 40000 // batch_size
-    validation_steps = 10000 // batch_size
-
-    print("Fitting Model...\n")
-
     with strategy.scope():
-        history = model.fit(
+        model.fit(
             train_ds,
-            epochs=50,
+            epochs=FLAGS.num_epochs,
             batch_size=batch_size,
             validation_data=val_ds,
-            validation_steps=validation_steps,
-            steps_per_epoch=steps_per_epoch,
+            validation_steps=10000 // batch_size,  # TODO: Default value can be removed, use flags
+            steps_per_epoch=40000 // batch_size,  # TODO: Default value can be removed, use flags
             callbacks=get_callbacks(),
         )
 
-    model.save(os.path.join(os.getcwd(), "model", "rice_leaf_disease_classifier"))
+    if FLAGS.export_path is not None:
+        model_path = FLAGS.export_path
+        model.save(model_path)
 
 
 if __name__ == "__main__":
-    train()
+    define_flags()
+    app.run(main)
