@@ -21,14 +21,8 @@ FLAGS = flags.FLAGS
 
 
 def define_flags():
-    flags.DEFINE_string(
-        "model_file",
-        "converted_model/rldc_mobilenet_v1_1_default_1.tflite",
-        "Path and file name to the TFLite model file.",
-    )  # TODO: Remove defaults
-    flags.DEFINE_string(
-        "label_file", "converted_model/rldc_mobilenet_labels.txt", "Path to the label file."
-    )  # TODO: Remove defaults
+    flags.DEFINE_string("model_file", None, "Path and file name to the TFLite model file.")
+    flags.DEFINE_string("label_file", None, "Path to the label file.")
     flags.DEFINE_string(
         "export_directory",
         "converted_model_metadata/",
@@ -36,7 +30,6 @@ def define_flags():
     )
     flags.mark_flag_as_required("model_file")
     flags.mark_flag_as_required("label_file")
-    flags.mark_flag_as_required("export_directory")
 
 
 class ModelSpecificInfo(object):
