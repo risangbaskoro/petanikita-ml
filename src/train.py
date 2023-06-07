@@ -37,7 +37,7 @@ def define_flags():
 
 
 def get_image_dataset_from_directory(
-    directory, image_size=(224, 224), validation_split=FLAGS.validation_split, seed=42
+    directory, image_size=(224, 224), validation_split=0.2, seed=42
 ):
     train_ds = tf.keras.utils.image_dataset_from_directory(
         directory,
@@ -84,7 +84,7 @@ def main(_):
 
     _, strategy = connect_to_tpu(tpu_address=FLAGS.tpu)
 
-    train_ds, val_ds = get_image_dataset_from_directory(FLAGS.dataset_path)
+    train_ds, val_ds = get_image_dataset_from_directory(FLAGS.dataset_path, validation_split=FLAGS.validation_split)
 
     class_names = train_ds.class_names
     num_classes = len(class_names)
