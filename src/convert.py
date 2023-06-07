@@ -21,7 +21,7 @@ def main(_):
     model_basename = os.path.basename(model_path)
 
     converter = tf.lite.TFLiteConverter.from_saved_model(model_path)
-    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    # converter.optimizations = [tf.lite.Optimize.DEFAULT]
 
     tflite_model = converter.convert()
 
