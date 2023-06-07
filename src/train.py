@@ -113,8 +113,10 @@ def main(_):
             epochs=FLAGS.num_epochs,
             batch_size=batch_size,
             validation_data=val_ds,
-            validation_steps=10000 // batch_size,  # TODO: Default value can be removed, use flags
-            steps_per_epoch=40000 // batch_size,  # TODO: Default value can be removed, use flags
+            validation_steps=10000 // batch_size,
+            # TODO: Default value can be removed, use flags
+            steps_per_epoch=40000 // batch_size,
+            # TODO: Default value can be removed, use flags
             callbacks=get_callbacks(),
         )
 
