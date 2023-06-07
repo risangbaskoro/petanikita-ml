@@ -11,10 +11,11 @@ import tensorflow as tf
 
 
 def define_flags():
-    flags.DEFINE_string(
-        "model_path", "model/rldc_mobilenet_v1_1_default_1", "The path to the model."
-    )  # TODO: Remove defaults
+    flags.DEFINE_string("model_path", None, "The path to the model.")
     flags.DEFINE_string("export_path", "converted_model", "The path to the model.")
+
+    flags.mark_flag_as_required("model_path")
+
 
 def main(_):
     model_path = FLAGS.model_path

@@ -18,24 +18,27 @@ FLAGS = flags.FLAGS
 def define_flags():
     flags.DEFINE_string(
         "dataset_path",
-        "/mnt/disks/persist/rice-leafs-1000px/train",
+        None,
         "The path to the dataset.",
-    )  # TODO: REMOVE DEFAULTS to None
+    )
     flags.DEFINE_string("export_path", None, "Path to export the model")
     flags.DEFINE_bool("augment_data", False, "Whether to augment the data.")
     flags.DEFINE_integer("batch_size", 200, "The batch size.")
     flags.DEFINE_string(
-        "tpu", "local", "The address of the TPU to connect to."
-    )  # TODO: REMOVE DEFAULTS to ""
+        "tpu", "", "The address of the TPU to connect to."
+    )
     flags.DEFINE_integer("num_epochs", 10, "The number of epochs to train for.")
+    flags.DEFINE_float("validation_split", 0.2, "The validation split of the training data.")
+    flags.DEFINE_string("pre_trained_model", "MobileNetV2", "The pre-trained model to use.")
+    flags.DEFINE_string("weights", "imagenet", "The weights to use for the pre-trained model.")
 
     flags.mark_flag_as_required("dataset_path")
     flags.mark_flag_as_required("export_path")
 
 
 def get_image_dataset_from_directory(
-    directory, image_size=(224, 224), validation_split=0.2, seed=42
-):  # TODO: Default value can be removed, use flags instead
+    directory, image_size=(224, 224), validation_split=FLAGS.validation_split, seed=42
+):
     train_ds = tf.keras.utils.image_dataset_from_directory(
         directory,
         image_size=image_size,
@@ -99,8 +102,8 @@ def main(_):
 
     with strategy.scope():
         model = LeafDiseaseClassifier(
-            num_classes=num_classes, name=model_basename[1]
-        )  # TODO: Default value can be removed, use flags
+            num_classes=num_classes, model=FLAGS.pre_trained_model, weights=FLAGS.weights, name=model_basename[1]
+        )
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(),
@@ -114,9 +117,7 @@ def main(_):
             batch_size=batch_size,
             validation_data=val_ds,
             validation_steps=10000 // batch_size,
-            # TODO: Default value can be removed, use flags
             steps_per_epoch=40000 // batch_size,
-            # TODO: Default value can be removed, use flags
             callbacks=get_callbacks(),
         )
 
